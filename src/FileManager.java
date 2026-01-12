@@ -1,54 +1,55 @@
 import java.io.*;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.*; // Required for file copy operations
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FileManager {
-    private static final String FILE_PATH = "event.csv";
-    private static final String BACKUP_PATH = "event_backup.csv";
 
-    // 1. Load all events from CSV
+    // File path constants
+    private static final String FILE_PATH = "events.csv"; // Main data file
+    private static final String BACKUP_PATH = "events_backup.csv"; // Backup file
+
+    // ==========================================
+    // Core Function: Load Events from CSV
+    // ==========================================
     public static List<Event> loadEvents() {
         List<Event> events = new ArrayList<>();
         File file = new File(FILE_PATH);
-        if (!file.exists())
+
+        // If file doesn't exist, return an empty list
+        if (!file.exists()) {
             return events;
+        }
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line = br.readLine(); // Skip header
+            String line;
             while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty())
-                    continue; // Skip empty lines
-                String[] data = line.split(",");
-                if (data.length >= 5) {
-                    try {
-                        Event e = new Event(
-                                Integer.parseInt(data[0]),
-                                data[1],
-                                data[2],
-                                // Parse using the specific ISO formatter required by PDF
-                                LocalDateTime.parse(data[3], Event.FILE_FORMATTER),
-                                LocalDateTime.parse(data[4], Event.FILE_FORMATTER));
-                        events.add(e);
-                    } catch (Exception e) {
-                        System.err.println("Skipping corrupted line: " + line);
-                    }
+                String[] parts = line.split(",");
+                if (parts.length >= 5) { // Ensure data integrity
+                    int id = Integer.parseInt(parts[0]);
+                    String title = parts[1].replace("|", ","); // Restore commas
+                    String description = parts[2].replace("|", ",");
+                    LocalDateTime start = LocalDateTime.parse(parts[3], Event.FILE_FORMATTER);
+                    LocalDateTime end = LocalDateTime.parse(parts[4], Event.FILE_FORMATTER);
+
+                    events.add(new Event(id, title, description, start, end));
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Error reading file: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error loading events: " + e.getMessage());
         }
-        Collections.sort(events); // Sort events by date automatically
         return events;
     }
 
-    // 2. Save all events (Overwrite mode - used for Deletion)
-    public static void saveAllEvents(List<Event> events) {
+    // ==========================================
+    // Core Function: Save All Events (Overwrite)
+    // ==========================================
+    public static void saveEvents(List<Event> events) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
-            bw.write("eventId,title,description,startDateTime,endDateTime"); // Header
-            bw.newLine();
-            for (Event e : events) {
-                bw.write(e.toCSV());
+            for (Event event : events) {
+                bw.write(event.toCSV());
                 bw.newLine();
             }
         } catch (IOException e) {
@@ -56,14 +57,11 @@ public class FileManager {
         }
     }
 
-    // 3. Append a single event (Used for Creation)
+    // ==========================================
+    // Helper: Append a Single Event
+    // ==========================================
     public static void appendEvent(Event event) {
-        boolean newFile = !new File(FILE_PATH).exists();
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH, true))) {
-            if (newFile) {
-                bw.write("eventId,title,description,startDateTime,endDateTime");
-                bw.newLine();
-            }
             bw.write(event.toCSV());
             bw.newLine();
         } catch (IOException e) {
@@ -71,23 +69,66 @@ public class FileManager {
         }
     }
 
-    // 4. Auto-generate the next ID
+    // ==========================================
+    // Helper: Generate Next Available ID
+    // ==========================================
     public static int getNextId() {
         int maxId = 0;
-        for (Event e : loadEvents()) {
-            if (e.getId() > maxId)
+        List<Event> events = loadEvents();
+        for (Event e : events) {
+            if (e.getId() > maxId) {
                 maxId = e.getId();
+            }
         }
         return maxId + 1;
     }
 
-    // 5. Backup Functionality (Bonus Feature)
-    public static boolean backupData() {
+    // ==========================================
+    // 📂 New Feature: Backup Data
+    // ==========================================
+    public static boolean backupEvents() {
         try {
-            Files.copy(Paths.get(FILE_PATH), Paths.get(BACKUP_PATH), StandardCopyOption.REPLACE_EXISTING);
+            Path source = Paths.get(FILE_PATH);
+            Path target = Paths.get(BACKUP_PATH);
+
+            // Check if source file exists
+            if (!Files.exists(source)) {
+                System.out.println("No data file to backup!");
+                return false;
+            }
+
+            // Perform copy (Replace existing backup if present)
+            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("Backup successful: " + target.toAbsolutePath());
             return true;
+
         } catch (IOException e) {
-            System.out.println("Backup failed: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // ==========================================
+    // 📂 New Feature: Restore Data
+    // ==========================================
+    public static boolean restoreEvents() {
+        try {
+            Path source = Paths.get(BACKUP_PATH);
+            Path target = Paths.get(FILE_PATH);
+
+            // Check if backup file exists
+            if (!Files.exists(source)) {
+                System.out.println("No backup file found!");
+                return false;
+            }
+
+            // Perform restore (Overwrite current data with backup)
+            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("Restore successful from: " + source.toAbsolutePath());
+            return true;
+
+        } catch (IOException e) {
+            e.printStackTrace();
             return false;
         }
     }

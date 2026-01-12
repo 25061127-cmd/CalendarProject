@@ -12,7 +12,7 @@ public class SchedulerLogic {
         for (Event e : events) {
             // Logic: (StartA < EndB) and (EndA > StartB) means overlap
             if (start.isBefore(e.getEndDateTime()) && end.isAfter(e.getStartDateTime())) {
-                System.out.println("⚠️  CONFLICT WARNING: Overlaps with event [" + e.getTitle() + "]");
+                System.out.println("  CONFLICT WARNING: Overlaps with event [" + e.getTitle() + "]");
                 return true;
             }
         }
@@ -35,7 +35,7 @@ public class SchedulerLogic {
         List<Event> events = FileManager.loadEvents();
         boolean removed = events.removeIf(e -> e.getId() == id);
         if (removed) {
-            FileManager.saveAllEvents(events); // Rewrite the file
+            FileManager.saveEvents(events); // Rewrite the file
         }
         return removed;
     }
@@ -57,7 +57,7 @@ public class SchedulerLogic {
                 futureEvents++;
         }
 
-        System.out.println("\n📊 === YOUR TIME ANALYSIS ===");
+        System.out.println("=== YOUR TIME ANALYSIS ===");
         System.out.println("Total Events: " + events.size());
         System.out.println("Upcoming Events: " + futureEvents);
         System.out.println("Total Scheduled Time: " + totalMinutes / 60 + " Hours " + totalMinutes % 60 + " Minutes");
