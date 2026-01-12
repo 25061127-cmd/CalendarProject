@@ -10,9 +10,8 @@ public class FileManager {
     private static final String FILE_PATH = "events.csv"; // Main data file
     private static final String BACKUP_PATH = "events_backup.csv"; // Backup file
 
-    // ==========================================
     // Core Function: Load Events from CSV
-    // ==========================================
+
     public static List<Event> loadEvents() {
         List<Event> events = new ArrayList<>();
         File file = new File(FILE_PATH);
@@ -43,9 +42,8 @@ public class FileManager {
         return events;
     }
 
-    // ==========================================
     // Core Function: Save All Events (Overwrite)
-    // ==========================================
+
     public static void saveEvents(List<Event> events) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
             for (Event event : events) {
@@ -57,9 +55,8 @@ public class FileManager {
         }
     }
 
-    // ==========================================
     // Helper: Append a Single Event
-    // ==========================================
+
     public static void appendEvent(Event event) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH, true))) {
             bw.write(event.toCSV());
@@ -69,9 +66,8 @@ public class FileManager {
         }
     }
 
-    // ==========================================
     // Helper: Generate Next Available ID
-    // ==========================================
+
     public static int getNextId() {
         int maxId = 0;
         List<Event> events = loadEvents();
@@ -83,9 +79,8 @@ public class FileManager {
         return maxId + 1;
     }
 
-    // ==========================================
-    // 📂 New Feature: Backup Data
-    // ==========================================
+    // New Feature: Backup Data
+
     public static boolean backupEvents() {
         try {
             Path source = Paths.get(FILE_PATH);
@@ -108,9 +103,8 @@ public class FileManager {
         }
     }
 
-    // ==========================================
-    // 📂 New Feature: Restore Data
-    // ==========================================
+    // New Feature: Restore Data
+
     public static boolean restoreEvents() {
         try {
             Path source = Paths.get(BACKUP_PATH);
